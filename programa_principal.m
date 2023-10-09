@@ -7,12 +7,12 @@ n = size(MA);
 t_real=MA(:,1);                                         % primeira coluna (tempo - dias)
 HI_real=MA(:,3);                                         % terceira coluna  (Y - casos)
 
-X0=[0.3 0.061 0.423];  %mum mua alpha
+X0=[0.4];  
 
 options = optimset('MaxFunEvals',9999999999999999); 
 
-lb = [0.1 0.01 0.01];                 
-ub = [0.9 0.9 0.6];
+lb = [0.01];                 
+ub = [0.9];
 
 
 resultado = lsqnonlin(@fit_simp,X0,lb,ub,options,MA);
