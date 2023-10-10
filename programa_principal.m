@@ -17,7 +17,6 @@ ub = [0.9];
 
 resultado = lsqnonlin(@fit_simp,X0,lb,ub,options,MA);
 x=resultado                                            % parametros estimados
-
 dengue_bauru
 
 figure(1)
