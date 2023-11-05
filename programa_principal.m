@@ -7,17 +7,17 @@ n = size(MA);
 t_real=MA(:,1);                                         % primeira coluna (tempo - dias)
 HI_real=MA(:,3);                                         % terceira coluna  (Y - casos)
 
-X0=[0.4];  
+X0=[0.9 1 1E3];  
 
 options = optimset('MaxFunEvals',9999999999999999); 
 
-lb = [0.01];                 
-ub = [0.9];
+lb = [0.5 0.5 100];                 
+ub = [1 3 1.2E7];
 
 
 resultado = lsqnonlin(@fit_simp,X0,lb,ub,options,MA);
 x=resultado                                            % parametros estimados
-dengue_bauru
+tentativa
 
 figure(1)
 plot(t,HS_estimado,'r');                   
