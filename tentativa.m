@@ -1,11 +1,12 @@
 %Modelo Dengue - Fracionário
 %clc
 %clear all
-dt=0.001;		
-tf =365;	    
+dt=0.0001;		
+tf =315;	    
 t=0:dt:tf;		
 t0=0;
-temp=((11.19/2)*cos((2*pi*t)/365)+22.77)'; %Função de temperatura ao longo do ano 
+%temp=((11.19/2)*cos((2*pi*t)/365)+22.77)'; %Função de temperatura ao longo do ano 365
+temp=((11.45/2)*cos((2*pi*t)/365)+22.33)'; %Teste com 315 dias contando a partir do dia 50
 % a0=22.8488;%    22.6783    23.0194
 % a1=2.8910;%     2.6336     3.1483 
 % b1=1.8890;%     1.5701     2.2078 
@@ -36,11 +37,13 @@ temp=((11.19/2)*cos((2*pi*t)/365)+22.77)'; %Função de temperatura ao longo do 
 %prec=(c0 + c1*cos(t*w1) + d1*sin(t*w1) + c2*cos(2*t*w1) + d2*sin(2*t*w1))';
 %plot(t,prec)
 prec=((63.2/2)*cos((2*pi*t)/365)+(63.2/2))';%Função de precipitação ao longo do ano
-HS_0=379138;
-HI_0=8;
-HR_0=0;
-MS_0=568719;
-MI_0=0;
+HS_0=379110;
+%HS_0=379138;%para 365 dias
+HI_0=36;
+%HI_0=8; %para 365 dias
+HR_0=0;%HR_0=0; %para 365 dias
+MS_0=568588;
+MI_0=54;
 A_0=0;
 %muh=3.9E-5;
 muh=0.0000346417; %taxa de mortalidade Bauru
@@ -53,8 +56,8 @@ delta=-15.837+(1.2897*temp)-0.0163*(temp).^2;%Taghikhani2018
 b=(0.056*delta);   %Lourdes 2015
 %b=0.0943+0.0043*temp;%Taghikhani2018
 % b=(0.03*temp+0.66)/7; %Putra
-gamma=1;
-tau=1;
+gamma=x(1);
+tau=x(2);
 %betah=0.4;
 % betah=0.133707252279892;
 %betah=x(1);
@@ -86,7 +89,7 @@ mua=((2.13-0.3797*temp+(2.457E-2)*temp.^2-(6.778E-4)*temp.^3+(6.794E-6)*temp.^4)
 % % plot(t,mua)
 % alpha=((0.131-(5.723E-2)*temp+(1.164E-2)*temp.^2-(1.341E-3)*temp.^3+(8.723E-5)*temp.^4-(3.017E-6)*temp.^5+(5.153E-8)*temp.^6+(3.42E-10)*temp.^7)/7);
 alpha=-1.847+0.8291*temp-0.1457*temp.^2+(1.305E-2)*temp.^3-(6.461E-4)*temp.^4+(1.796E-5)*temp.^5-(2.61E-7)*temp.^6+(1.551E-9)*temp.^7;%Putra 2017
-Cmax=1e3; %ou 1E4
+Cmax=x(3); %ou 1E4
  % Cmax=1E4;
  % Cmax=9.820982413224507E3;
 
@@ -112,7 +115,7 @@ HR_estimado=y(3,:);
 MS_estimado=y(4,:);	
 MI_estimado=y(5,:);	
 A_estimado=y(6,:);	
-MA = load('DadosBauru2022.txt');  %dados
+MA = load('DadosBauru2022_315.csv');  %dados
 n = size(MA);  
 t_real=MA(:,1);                                         % primeira coluna (tempo - dias)
 HI_real=MA(:,3);   
@@ -128,15 +131,15 @@ MATRIZ_ICC_CASOS(i,2)=HI_estimado(round(t_real(i)/dt)+1);
 end
 ICC_CASOS=ICC(MATRIZ_ICC_CASOS,'C-1')
 %ICC_MORTES=ICC(MATRIZ_ICC_MORTES,'C-1')
-
-figure (3)
-plot(t_real,HI_real, 'bo')
-figure (4)
-plot(t,HI_estimado)
-figure(2)
-plot(t,HI_estimado,'g', t_real, HI_real, 'bo');                   
-xlabel('tempo(dias)');                                            
-ylabel('População'); 
-legend('H_I, com \gamma=1')
-title('Cenário 3 - Q_0>1 e R_0>1');
-hold on;
+% 
+% figure (3)
+% plot(t_real,HI_real, 'bo')
+% figure (4)
+% plot(t,HI_estimado)
+% figure(2)
+% plot(t,HI_estimado,'g', t_real, HI_real, 'bo');                   
+% xlabel('tempo(dias)');                                            
+% ylabel('População'); 
+% legend('H_I, com \gamma=1')
+% title('Cenário 3 - Q_0>1 e R_0>1');
+% hold on;

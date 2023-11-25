@@ -1,18 +1,17 @@
 clc
 clear all
 close all
-MA = load('DadosBauru2022.txt');  %colocar o csv
+MA = load('DadosBauru2022_315.csv');  %colocar o csv
 n = size(MA);  
 
-t_real=MA(:,1);                                         % primeira coluna (tempo - dias)
-HI_real=MA(:,3);                                         % terceira coluna  (Y - casos)
+t_real=MA(:,1);                                                                                         % primeira coluna (tempo - dias)
+HI_real=MA(:,3);                                % terceira coluna  (Y - casos)
 
-X0=[0.0001 0.9 1.5];  
+X0=[0.85 1.5 1e3];  
 
 options = optimset('MaxFunEvals',9999999999999999); 
-
-lb = [0 0.5 0.5];                 
-ub = [0.001 1 3];
+lb = [0.75 0.5 1e2];                 
+ub = [1 3 1e6];
 
 
 resultado = lsqnonlin(@fit_simp,X0,lb,ub,options,MA);
