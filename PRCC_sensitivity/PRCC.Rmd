@@ -1,0 +1,172 @@
+---
+title: "PRCC - Sensitivity"
+author: "Guilherme Rodrigues"
+date: "2024-02-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introdução
+
+Esta seção consiste na análise de sensibilidade de um dado número reprodutivo básico oriundo de um modelo matemático proposto para estudar a dinâmica da dengue envolvendo o mosquito na fase aquática. O $\mathcal{R}_0$ é dado por
+
+$\mathcal{R}_0=\sqrt{\left(\dfrac{b^2\beta_M\beta_H\alpha C}{H(\mu_M+\mu_M')^2(\mu_H+\sigma)}\right)\left(1-\dfrac{1}{Q_0} \right)},\quad Q_0=\dfrac{k\delta\alpha}{(\mu_M+\mu_M')(\alpha+\mu_A)},$
+
+em que $b$ é o número de picadas efetivas que transmitem a doença por dia; $\beta_M$ a probabilidade de infecção do vetor para o humano; $\beta_H$ a probabilidade de infecção do humano para o vetor; $H$ a população total de humanos; $\alpha$ a taxa de maturação dos mosquitos na fase aquátiva; $\mu_M$ a taxa de mortalidade per capita da população de vetores; $\mu_M'$ a taxa de mortalidade adcional; $\sigma$ a taxa de recuperação de humanos; $\delta$ a taxa de oviposição per capita; e $\mu_A$ a taxa de mortalidade do vetor na fase aquática.
+
+Dividimos a análise de sensibilidade em duas partes: na primeira avaliamos a contribuição de todos os parâmetros para a função $\mathcal{R}_0$, e na segunda avaliamos termos específicos, os quais são $b\beta_H$ que representa o número de humanos produzidos por um mosquito por dia, $b\beta_M$ que é o número de mosquitos infectados produzidos por um humano por dia, $\mu_M+\mu_M'$ que representa a soma das taxas de mortalidade per capta da população de vetores e a taxa de mortalidade adicional, $\mu_A$ e $\alpha$, baseando-se na análise realizada por Cruz-Pacheco, Esteva e Ferreira (2019).
+
+### Pacotes necessários
+
+```{r}
+library("sensitivity")
+library("lhs")
+library("ggplot2")
+```
+
+
+```{r}
+rm(list=ls()) # clear
+
+# Defina a funC'C#o R0 e os parC"metros
+R0 <- function(par1, par2, par3, mu_A, alpha, C, sigma, dummy) {
+  Q0 = (k * delta * alpha) / ((par3) * (alpha + mu_A))
+  return ((par1 * par2 * alpha * C) / (H * (par3)^2 * (mu_H + sigma)) * (1 - 1 / Q0))
+}
+
+#Parâmetros fixos
+b = 1
+beta_M = 0.4
+beta_H = 0.4
+mu_H = 3.9e-5
+k = 0.8
+delta = 6.353
+H = 1000
+mu_M = 0.3 # 0.8
+mu_M_linha = 0.05
+
+# Parâmetros amostrados
+parameters <- c(
+  par1=b*beta_M,
+  par2=b*beta_H,
+  par3 = mu_M + mu_M_linha,
+  mu_A=0.061,
+  alpha = 0.423,
+  C = 1000,
+  sigma = 1/7,
+  dummy = 1
+)
+
+# Definindo a variaC'C#o de B125%
+variation_percent = 0.25
+
+# Calculando os limites superiores e inferiores
+lower_limits <- parameters * (1 - variation_percent)
+upper_limits <- parameters * (1 + variation_percent)
+
+# NC:mero de amostras e parC"metros
+NumSim <- 5000
+NumPar <- length(parameters)
+
+# Crie a matriz de parC"metros usando LHS
+mdat <- matrix(nrow = NumSim, ncol = NumPar)
+mdat <- improvedLHS(NumSim, NumPar)
+
+#View(mdat)
+
+# Ajuste os intervalos dos parC"metros usando os limites superior e inferior
+for (i in 1:NumPar) {
+  mdat[, i] <- mdat[, i] * (upper_limits[i] - lower_limits[i]) + lower_limits[i]
+}
+
+# Calcule os valores de R0 para cada conjunto de parC"metros
+R0_values <- apply(mdat, 1, function(row) R0(row[1], row[2], row[3], row[4], row[5], row[6], row[6], row[7]))
+
+# Converta a matriz de parC"metros para um dataframe
+LHS <- as.data.frame(mdat)
+
+# Calcule o PRCC e p-valor para a funC'C#o R0 e os parC"metros
+PRCC_values <- pcc(LHS, R0_values, rank = TRUE, nboot = 1000, conf = 0.95)  # Ajuste nboot conforme necessC!rio
+
+# Exiba os resultados
+PRCC_values
+```
+## Resultados
+
+Cada coluna de resultados possui os seguintes significados:
+
+1. **original:** Este é o valor do índice PRCC para cada parâmetro. O índice PRCC mede a correlação parcial entre um parâmetro e a saída do modelo, controlando os efeitos dos outros parâmetros. Um valor próximo de 1 ou -1 indica uma forte correlação positiva ou negativa, enquanto um valor próximo de 0 indica uma correlação fraca.
+
+2. **bias:** Este é o viés (bias) associado a cada índice PRCC. O viés refere-se à diferença sistemática entre a estimativa do índice PRCC e o verdadeiro valor subjacente. Um viés próximo de zero é desejável.
+
+3. **std. error:** Este é o desvio padrão (std. error) associado a cada índice PRCC. O desvio padrão fornece uma medida da variabilidade da estimativa do índice PRCC. Quanto menor o desvio padrão, mais preciso é o índice.
+
+4. **min. c.i.:** Este é o limite inferior do intervalo de confiança para cada índice PRCC. Indica o intervalo em que se espera que o verdadeiro valor do índice PRCC esteja com uma certa probabilidade.
+
+5. **max. c.i.:** Este é o limite superior do intervalo de confiança para cada índice PRCC. Semelhante ao limite inferior, ele fornece um intervalo dentro do qual se espera que o verdadeiro valor do índice PRCC esteja com uma certa probabilidade.
+
+Os resultados para cada parâmetro indicam que:
+
+(a) $b$ tem um índice PRCC original de 0.9305, indicando uma forte correlação positiva com a saída do modelo. O pequeno viés e desvio padrão sugerem que essa estimativa é bastante precisa. O intervalo de confiança (de 0.9241 a 0.9376) indica a faixa em que se espera que o verdadeiro valor do índice PRCC esteja com 95% de confiança.
+
+(b) $C$ tem uma correlação positiva (0.7821) com a saída do modelo, mas menor em comparação com $b$. A estimativa é precisa, com um intervalo de confiança de 0.7647 a 0.7998.
+
+(c) $H$ tem uma correlação negativa forte (-0.7787) com a saída do modelo. A estimativa é precisa, com um intervalo de confiança de -0.8001 a -0.7609.
+
+(d) $k$ tem uma correlação positiva (0.1208) com a saída do modelo, mas relativamente fraca. A estimativa é precisa, com um intervalo de confiança de 0.0942 a 0.1507.
+
+(e) $\alpha$, $\beta_H$ e $\beta_M$ possuem correlação positiva de 0.79 respectivamente com a saída do modelo, sendo a estimativa precisa em ambos os casos.
+
+(f) $\delta$, $\mu_A$ e $\mu_H$ possuem ambos correlação positiva fraca com a saída do modelo, em comparação com os outros parâmetros.  
+
+(g) $\mu_M$ e $\sigma$ possuem correlação negativa forte com a saída do modelo, sendo $\mu_M$ o de maior relevância.
+
+(h) $\mu_M'$ possui correlação negativa fraca com a saída do modelo. 
+
+Do ponto de vista biológico, destaca-se que o parâmetro preponderante no aumento do número básico de reprodução ($\mathcal{R}_0$), que reflete a propagação exacerbada da doença, é representado por $b$, que denota o número de picadas efetivas que transmitem a doença por dia. Essa constatação evidencia que quanto maior for a interação do indivíduo com o mosquito fêmea portador do vírus da Dengue, maior será a propagação da doença. Em contrapartida, observa-se que o parâmetro $\mu_M$ exerce a maior influência no decréscimo de $\mathcal{R}_0$, representando a taxa de mortalidade per capita da população de vetores. Essa constatação sugere que a implementação de estratégias de controle, visando à redução da população de mosquitos, contribui significativamente para a diminuição da propagação da dengue.
+
+Após o cálculo dos índices de sensibilidade calculamos a média dos valores de $\mathcal{R}_0$ gerados a partir dos parâmetros amostrados e a soma dos índices de sensibilidade.
+
+```{r}
+soma_PRCC <- sum(PRCC_values$PRCC$original)
+cat('A soma dos índices é dada por: ', soma_PRCC,'\n')
+
+# Impressão da média de R0
+media_R0 <- mean(R0_values)
+cat('A média da saída da função R0 é:', media_R0, '\n')
+```
+
+A Figura a seguir representa os resultados obtidos da análise de sensibilidade PRCC. Também salvamos os resultados em um dataframe para ser possível utilizar outros softwares para a construção do gráfico.
+
+OBS: a variável dummy é utilizada para verificar se o índice de sensibilidade dos parâmetros é significativo. Isto é, se algum parâmetro obtiver índice menor ou próximo ao dummy, este pode ser considerado irrelevante na dinâmica.
+
+```{r}
+nomes <- c("bβM", "bβH", "μM+μM´", "μA", "α", "C", "σ", "dummy")
+
+# Crie um dataframe para os resultados do PRCC
+df_results <- data.frame(Parameter = nomes, PRCC = PRCC_values$PRCC$original)
+# Salvar o dataframe em um arquivo CSV
+write.csv(df_results, file = "prcc_values.csv", row.names = FALSE)
+
+# Crie o gráfico usando ggplot2
+ggplot(df_results, aes(x = Parameter, y = PRCC, fill = PRCC > 0)) +
+  geom_bar(stat = "identity", position = "identity") +
+  scale_fill_manual(values = c("violet", "skyblue")) +
+  labs(
+    x = "Parameters",
+    y = "PRCC"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none",
+        axis.text.x = element_text(size = 12),  # Ajuste o tamanho da fonte no eixo x
+        axis.text.y = element_text(size = 12),  # Ajuste o tamanho da fonte no eixo y
+        axis.title = element_text(size = 14),   # Ajuste o tamanho da fonte dos títulos dos eixos
+        axis.line = element_line(size = 0.2),     # Ajuste a espessura da linha do eixo
+  ) +
+  geom_text(aes(label = sprintf("%.2f", PRCC)), vjust = ifelse(df_results$PRCC > 0, -.5, 1.2)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black", size = 0.4)
+```
+
